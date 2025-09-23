@@ -101,8 +101,12 @@ public class CartServiceImpl implements CartService{
         List<CartDTO> cartDTOs = carts.stream().map(cart -> {
             CartDTO cartDTO = modelMapper.map(cart, CartDTO.class);
 
-            List<ProductDTO> products = cart.getCartItems().stream()
-                    .map(p -> modelMapper.map(p.getProduct(), ProductDTO.class)).collect(Collectors.toList());
+            List<ProductDTO> products = cart.getCartItems().stream().map(cartItem -> {
+                ProductDTO productDTO = modelMapper.map(cartItem.getProduct(), ProductDTO.class);
+                productDTO.setQuantity(cartItem.getQuantity()); // Set the quantity from CartItem
+                return productDTO;
+            }).collect(Collectors.toList());
+
 
             cartDTO.setProducts(products);
 
@@ -234,6 +238,7 @@ public class CartServiceImpl implements CartService{
         return "Product " + cartItem.getProduct().getProductName() + " removed from the cart !!!";
     }
 
+
     @Override
     public void updateProductInCarts(Long cartId, Long productId) {
         Cart cart = cartRepository.findById(cartId)
@@ -244,18 +249,19 @@ public class CartServiceImpl implements CartService{
 
         CartItem cartItem = cartItemRepository.findCartItemByProductIdAndCartId(cartId, productId);
 
-        if(cartItem == null) {
-            throw new APIException("Product " + product.getProductName() + " not available in cart!!!");
+        if (cartItem == null) {
+            throw new APIException("Product " + product.getProductName() + " not available in the cart!!!");
         }
 
-        double cartPrice = cart.getTotalPrice() -
-                (cartItem.getProductPrice() * cartItem.getQuantity());
+        double cartPrice = cart.getTotalPrice()
+                - (cartItem.getProductPrice() * cartItem.getQuantity());
 
         cartItem.setProductPrice(product.getSpecialPrice());
 
-        cart.setTotalPrice(cartPrice +
-                (cartItem.getProductPrice() * cartItem.getQuantity()) );
+        cart.setTotalPrice(cartPrice
+                + (cartItem.getProductPrice() * cartItem.getQuantity()));
 
         cartItem = cartItemRepository.save(cartItem);
     }
+
 }
